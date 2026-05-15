@@ -7,7 +7,7 @@
 ## Quick Start
 
 ```bash
-git clone https://github.com/your-username/ecg-dashboard.git
+git clone https://github.com/MohamedElmansy2/ECG_Dashboard.git
 cd ecg-dashboard
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
