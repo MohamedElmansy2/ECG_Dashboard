@@ -1,33 +1,103 @@
 # ECG Deep Learning Dashboard
 
-An interactive Dash + Plotly dashboard for ECG arrhythmia classification and myocardial infarction (MI) detection using a 1-D ResNet trained on MIT-BIH and PTB datasets.
+> An interactive dashboard for ECG arrhythmia classification and myocardial infarction (MI) detection using a 1-D ResNet trained on MIT-BIH and PTB datasets — built with Dash, Plotly, and PyTorch.
 
 ---
 
-## Screenshots
+## Quick Start
 
-| Live Inference | Model Overview |
-|---|---|
-| ![Live Inference](assets/screenshot_inference.png) | ![Model Overview](assets/screenshot_overview.png) |
+```bash
+git clone https://github.com/your-username/ecg-dashboard.git
+cd ecg-dashboard
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+python app.py
+```
 
-| Training Curves | Ablation Study |
-|---|---|
-| ![Training Curves](assets/screenshot_training.png) | ![Ablation Study](assets/screenshot_ablation.png) |
+Then open **http://127.0.0.1:8050** in your browser.
 
-### Data Pipeline
+---
+
+## Dashboard Tabs
+
+### 🫀 Live Inference
+
+Upload a `.npy` beat or `.csv` signal — or pick a synthetic demo beat — then run the model and inspect the waveform and per-class confidence bars in real time.
+
+![Live Inference](assets/screenshot_inference.png)
+
+---
+
+### 🧠 Model Overview
+
+Explore the full ECGResNet architecture with an interactive block count slider, a layer-by-layer dimension table, parameter counts, and the transfer-learning setup used for MI detection.
+
+![Model Overview](assets/screenshot_overview.png)
+
+---
+
+### 📈 Training Curves
+
+Load your own training history (`.npy`) or view representative curves. Includes dataset split statistics, class distribution, and the WeightedRandomSampler balancing strategy.
+
+![Training Curves](assets/screenshot_training.png)
+
+---
+
+### 🔬 Ablation Study
+
+Compare four training configurations side by side — baseline, fewer residual blocks, no balancing, and smaller batch size — with per-class accuracy breakdown.
+
+![Ablation Study](assets/screenshot_ablation.png)
+
+---
+
+### 🔄 Data Pipeline
+
+Step-by-step preprocessing reference: WFDB loading → resampling → windowing → normalisation → R-peak detection → beat extraction → AAMI label mapping.
+
 ![Data Pipeline](assets/screenshot_pipeline.png)
 
 ---
 
-## Features
+## Model Architecture
 
-| Tab | Description |
-|-----|-------------|
-| **Live Inference** | Upload a `.npy` beat or `.csv` signal, or generate a synthetic demo beat, then run the model and inspect the waveform + confidence bars |
-| **Model Overview** | Architecture diagram (interactive block count), parameter breakdown, transfer-learning setup |
-| **Training** | Simulated or loaded training curves; dataset split statistics and class distribution |
-| **Ablation Study** | Side-by-side config comparison table and bar chart |
-| **Data Pipeline** | Preprocessing flow diagram, AAMI class map, and signal parameters |
+```
+Input (1 × 300 samples @ 125 Hz)
+        │
+   Conv1d  k=5, 32ch
+        │
+   ResidualBlock × N          ← each block: Conv→Conv→ReLU→MaxPool (stride 2)
+        │
+   AdaptiveAvgPool1d  →  32-d vector
+        │
+   FC(32→32) → ReLU → FC(32→32) → ReLU → FC(32 → num_classes)
+```
+
+| Model | Task | Classes | Dataset |
+|-------|------|---------|---------|
+| `ECGResNet` | Arrhythmia classification | N, S, V, F, Q | MIT-BIH |
+| `ECGResNetTransfer` | MI detection (frozen backbone) | Normal, MI | PTB |
+
+**Paper targets:** Arrhythmia **93.4%** · MI **95.9%**
+
+---
+
+## Loading Real Checkpoints
+
+The dashboard runs with randomly-initialised weights for UI demonstration. For meaningful predictions:
+
+1. Train and save checkpoints:
+
+```python
+# Arrhythmia
+torch.save({"model_state": model.state_dict(), "best_val_acc": acc, "epoch": epoch}, "arrhy_best.pt")
+
+# MI transfer
+torch.save({"model_state": model.state_dict(), "best_acc": acc}, "transfer_best.pt")
+```
+
+2. In the **Live Inference** tab → enter checkpoint paths → click **Load model**.
 
 ---
 
@@ -35,20 +105,19 @@ An interactive Dash + Plotly dashboard for ECG arrhythmia classification and myo
 
 ```
 ecg_dashboard/
-├── app.py                  # Entry point — Dash app init, sidebar, root layout
-├── callbacks.py            # All Dash callbacks (routing, inference, training, etc.)
-├── config.py               # Shared constants (classes, colors, ablation configs)
+├── app.py                  # Entry point — Dash app, sidebar, root layout
+├── callbacks.py            # All Dash callbacks (routing, inference, training …)
+├── config.py               # Constants — classes, colors, ablation configs
 ├── figures.py              # Plotly figure builders
-├── layout_helpers.py       # Reusable UI components (card, metric_card, section_header)
-├── model.py                # PyTorch model definitions (ECGResNet, ECGResNetTransfer)
-├── utils.py                # Signal processing, model loading, synthetic data generators
+├── layout_helpers.py       # Reusable UI components (card, metric_card …)
+├── model.py                # ECGResNet + ECGResNetTransfer definitions
+├── utils.py                # Signal processing, model loader, synthetic data
 ├── pages/
-│   ├── __init__.py
-│   ├── inference.py        # Live Inference page layout
-│   ├── overview.py         # Model Overview page layout
-│   ├── training.py         # Training page layout
-│   ├── ablation.py         # Ablation Study page layout
-│   └── pipeline.py         # Data Pipeline page layout
+│   ├── inference.py        # Live Inference tab
+│   ├── overview.py         # Model Overview tab
+│   ├── training.py         # Training tab
+│   ├── ablation.py         # Ablation Study tab
+│   └── pipeline.py         # Data Pipeline tab
 ├── assets/
 │   ├── screenshot_inference.png
 │   ├── screenshot_overview.png
@@ -60,94 +129,15 @@ ecg_dashboard/
 
 ---
 
-## Installation
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/your-username/ecg-dashboard.git
-cd ecg-dashboard
-
-# 2. Create and activate a virtual environment (recommended)
-python -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scripts\activate
-
-# 3. Install dependencies
-pip install -r requirements.txt
-```
-
----
-
-## Usage
-
-```bash
-python app.py
-```
-
-Then open **http://127.0.0.1:8050** in your browser.
-
----
-
-## Loading Real Model Checkpoints
-
-The dashboard works out-of-the-box with randomly-initialised weights for UI demonstration. To get meaningful predictions:
-
-1. Train the arrhythmia model and save a checkpoint (e.g. `output/arrhy_best.pt`).
-2. Train the MI transfer model (e.g. `output/transfer_best.pt`).
-3. In the **Live Inference** tab, enter the checkpoint paths and click **Load model**.
-
-Expected checkpoint format:
-
-```python
-# Arrhythmia
-torch.save({"model_state": model.state_dict(), "best_val_acc": acc, "epoch": epoch}, path)
-
-# MI transfer
-torch.save({"model_state": model.state_dict(), "best_acc": acc}, path)
-```
-
----
-
-## Model Architecture
-
-```
-Input (1×300)
-    │
-Conv1d k=5, 32ch
-    │
-ResidualBlock ×N  (each: Conv→Conv→ReLU→MaxPool stride-2)
-    │
-AdaptiveAvgPool1d → 32-d vector
-    │
-FC(32→32) → ReLU → FC(32→32) → ReLU → FC(32→num_classes)
-```
-
-- **Arrhythmia model**: 5-class (N, S, V, F, Q) trained on MIT-BIH
-- **MI model**: 2-class (Normal, MI) fine-tuned on PTB with frozen backbone
-
----
-
 ## Datasets
 
-| Dataset | Task | Classes |
-|---------|------|---------|
-| [MIT-BIH Arrhythmia](https://physionet.org/content/mitdb/) | Arrhythmia classification | N, S, V, F, Q (AAMI) |
-| [PTB Diagnostic ECG](https://physionet.org/content/ptbdb/) | MI detection | Normal, MI |
+| Dataset | Task | Source |
+|---------|------|--------|
+| [MIT-BIH Arrhythmia](https://physionet.org/content/mitdb/) | 5-class arrhythmia | PhysioNet |
+| [PTB Diagnostic ECG](https://physionet.org/content/ptbdb/) | MI vs Normal | PhysioNet |
 
 ---
 
 ## Dependencies
 
-- [Dash](https://dash.plotly.com/) + [dash-bootstrap-components](https://dash-bootstrap-components.opensource.faculty.ai/)
-- [Plotly](https://plotly.com/python/)
-- [PyTorch](https://pytorch.org/)
-- [SciPy](https://scipy.org/)
-- [NumPy](https://numpy.org/)
-
----
-
-## Paper Targets
-
-| Task | Accuracy |
-|------|----------|
-| Arrhythmia (MIT-BIH, balanced test) | **93.4%** |
-| MI detection (PTB) | **95.9%** |
+[Dash](https://dash.plotly.com/) · [dash-bootstrap-components](https://dash-bootstrap-components.opensource.faculty.ai/) · [Plotly](https://plotly.com/python/) · [PyTorch](https://pytorch.org/) · [SciPy](https://scipy.org/) · [NumPy](https://numpy.org/)
