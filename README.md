@@ -4,6 +4,21 @@ An interactive Dash + Plotly dashboard for ECG arrhythmia classification and myo
 
 ---
 
+## Screenshots
+
+| Live Inference | Model Overview |
+|---|---|
+| ![Live Inference](assets/screenshot_inference.png) | ![Model Overview](assets/screenshot_overview.png) |
+
+| Training Curves | Ablation Study |
+|---|---|
+| ![Training Curves](assets/screenshot_training.png) | ![Ablation Study](assets/screenshot_ablation.png) |
+
+### Data Pipeline
+![Data Pipeline](assets/screenshot_pipeline.png)
+
+---
+
 ## Features
 
 | Tab | Description |
@@ -34,6 +49,12 @@ ecg_dashboard/
 │   ├── training.py         # Training page layout
 │   ├── ablation.py         # Ablation Study page layout
 │   └── pipeline.py         # Data Pipeline page layout
+├── assets/
+│   ├── screenshot_inference.png
+│   ├── screenshot_overview.png
+│   ├── screenshot_training.png
+│   ├── screenshot_ablation.png
+│   └── screenshot_pipeline.png
 └── requirements.txt
 ```
 
